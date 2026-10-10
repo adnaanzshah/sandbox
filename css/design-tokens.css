@@ -1,0 +1,44 @@
+/* ==========================================================================
+   DESIGN TOKENS - MONOCHROME LIQUID GLASS
+   ========================================================================== */
+:root {
+  --font-family-apple: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --transition-bezier: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 220ms var(--transition-bezier);
+  --transition-smooth: 450ms var(--transition-bezier);
+  --radius-capsule: 9999px;
+  --radius-cell: 16px;
+  --radius-card: 22px;
+}
+
+[data-theme="dark"] {
+  --bg-core: #000000;
+  --bg-surface: #0a0a0a;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary: rgba(255, 255, 255, 0.30);
+  
+  --glass-fill: rgba(24, 24, 27, 0.65);
+  --glass-fill-hover: rgba(39, 39, 42, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-specular-edge: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.65);
+  --glass-blur: 28px;
+  --glass-saturate: 180%;
+}
+
+[data-theme="light"] {
+  --bg-core: #ffffff;
+  --bg-surface: #f4f4f6;
+  --text-primary: #000000;
+  --text-secondary: rgba(0, 0, 0, 0.55);
+  --text-tertiary: rgba(0, 0, 0, 0.30);
+  
+  --glass-fill: rgba(255, 255, 255, 0.75);
+  --glass-fill-hover: rgba(245, 245, 247, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-specular-edge: rgba(255, 255, 255, 0.85);
+  --glass-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.06);
+  --glass-blur: 28px;
+  --glass-saturate: 180%;
+}
