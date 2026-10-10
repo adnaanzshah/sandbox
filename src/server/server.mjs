@@ -89,12 +89,20 @@ app.get('/api/update/status', (req, res) => {
   });
 });
 
+// Apply instant update with pre-pull checkout to avoid collision
 app.post('/api/update/apply', (req, res) => {
-  exec('git pull --ff-only origin master', { cwd: ROOT_DIR }, (err, stdout, stderr) => {
-    if (err) return res.status(500).json({ success: false, error: stderr });
-    const statePath = path.join(RUNTIME_DIR, 'update_state.json');
-    if (fs.existsSync(statePath)) {
-      try { fs.writeFileSync(statePath, JSON.stringify({ update_available: false }), 'utf8'); } catch (e) {}
+  const pullCommand = 'git checkout -- src/runtime/ 2>nul || true && git pull --ff-only origin master';
+  
+  exec(pullCommand, { cwd: ROOT_DIR }, (err, stdout, stderr) => {
+    if (err) {
+      // Fallback for Unix/Android if Windows syntax fails
+      exec('git checkout -- src/runtime/ ; git pull --ff-only origin master', { cwd: ROOT_DIR }, (fallbackErr, fallbackStdout, fallbackStderr) => {
+        if (fallbackErr) {
+          return res.status(500).json({ success: false, error: fallbackStderr || stderr });
+        }
+        res.json({ success: true, new_version: parseVersionManifest().version });
+      });
+      return;
     }
     res.json({ success: true, new_version: parseVersionManifest().version });
   });
