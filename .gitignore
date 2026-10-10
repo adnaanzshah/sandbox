@@ -1,0 +1,12 @@
+node_modules/
+package-lock.json
+__pycache__/
+*.py[cod]
+.venv/
+env/
+*.pid
+*.log
+src/runtime/
+.env
+.vscode/
+.idea/
