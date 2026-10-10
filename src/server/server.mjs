@@ -174,28 +174,26 @@ app.get("/api/update/status", (req, res) => {
   });
 });
 
-app.post("/api/update/apply", (req, res) => {
-  const command =
-    process.platform === "win32"
-      ? "git checkout -- src/runtime/ 2>nul || (exit 0) & git pull --ff-only origin master"
-      : "git checkout -- src/runtime/ 2>/dev/null || true; git pull --ff-only origin master";
+// Hardened Auto-Update Route
+app.post('/api/update/apply', (req, res) => {
+  // Discard runtime modifications and untracked collisions before pulling
+  const preCleanCmd = process.platform === 'win32'
+    ? 'git checkout -- src/runtime/ 2>nul & git checkout -- . 2>nul'
+    : 'git checkout -- src/runtime/ 2>/dev/null || true; git checkout -- . 2>/dev/null || true';
 
-  exec(command, { cwd: ROOT_DIR, timeout: 8000 }, (err, stdout, stderr) => {
-    if (err)
-      return res
-        .status(500)
-        .json({ success: false, error: stderr || err.message });
-    const statePath = path.join(RUNTIME_DIR, "update_state.json");
-    if (fs.existsSync(statePath)) {
-      try {
-        fs.writeFileSync(
-          statePath,
-          JSON.stringify({ update_available: false }),
-          "utf8",
-        );
-      } catch (e) {}
-    }
-    res.json({ success: true, new_version: parseVersionManifest().version });
+  exec(preCleanCmd, { cwd: ROOT_DIR }, () => {
+    exec('git pull --ff-only origin master', { cwd: ROOT_DIR, timeout: 12000 }, (err, stdout, stderr) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: stderr || err.message });
+      }
+
+      const statePath = path.join(RUNTIME_DIR, 'update_state.json');
+      if (fs.existsSync(statePath)) {
+        try { fs.writeFileSync(statePath, JSON.stringify({ update_available: false }), 'utf8'); } catch (e) {}
+      }
+
+      res.json({ success: true, new_version: parseVersionManifest().version });
+    });
   });
 });
 
