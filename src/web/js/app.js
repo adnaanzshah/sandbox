@@ -1,6 +1,6 @@
-import { SandboxEngine } from './engine/SandboxEngine.js';
+import { SandboxApp } from './core/SandboxApp.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const engine = new SandboxEngine();
-  await engine.bootstrap();
+  const app = new SandboxApp();
+  await app.launch();
 });

@@ -112,7 +112,6 @@ class UniversalServerManager:
         self._ensure_dependencies()
         self._acquire_wake_lock()
 
-        # 1. Start Server
         s_pid = self._read_pid(self.server_pid_file)
         if self._is_running(s_pid):
             print(f"[STATUS] Web Server already running (PID: {s_pid}).")
@@ -142,7 +141,6 @@ class UniversalServerManager:
             self.server_pid_file.write_text(str(node_proc.pid), encoding="utf-8")
             print(f"[SUCCESS] Web Server started (PID: {node_proc.pid}).")
 
-        # 2. Start Linked Updater Daemon
         u_pid = self._read_pid(self.updater_pid_file)
         if self._is_running(u_pid):
             print(f"[STATUS] Updater Daemon already running (PID: {u_pid}).")

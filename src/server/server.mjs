@@ -40,7 +40,7 @@ app.use('/js', express.static(path.join(WEB_DIR, 'js'), {
 
 function parseVersionManifest() {
   const vPath = path.join(ROOT_DIR, 'VERSION');
-  const manifest = { version: '2.0.13', channel: 'development', codename: 'Titanium' };
+  const manifest = { version: '2.0.16', channel: 'development', codename: 'Titanium' };
   if (fs.existsSync(vPath)) {
     const raw = fs.readFileSync(vPath, 'utf8');
     raw.split(/\r?\n/).forEach(line => {
@@ -54,7 +54,6 @@ function parseVersionManifest() {
   return manifest;
 }
 
-// Single Source of Truth Config Endpoint: Dynamically binds VERSION into config payload
 app.get('/api/config', (req, res) => {
   const configPath = path.join(SRC_DIR, 'config', 'config.json');
   let configData = {};
@@ -89,13 +88,11 @@ app.get('/api/update/status', (req, res) => {
   });
 });
 
-// Apply instant update with pre-pull checkout to avoid collision
 app.post('/api/update/apply', (req, res) => {
   const pullCommand = 'git checkout -- src/runtime/ 2>nul || true && git pull --ff-only origin master';
   
   exec(pullCommand, { cwd: ROOT_DIR }, (err, stdout, stderr) => {
     if (err) {
-      // Fallback for Unix/Android if Windows syntax fails
       exec('git checkout -- src/runtime/ ; git pull --ff-only origin master', { cwd: ROOT_DIR }, (fallbackErr, fallbackStdout, fallbackStderr) => {
         if (fallbackErr) {
           return res.status(500).json({ success: false, error: fallbackStderr || stderr });

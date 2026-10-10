@@ -1,0 +1,61 @@
+/* ==========================================================================
+   BODY SECTION - DYNAMIC WORKSPACE CANVAS & SUB-SECTIONS
+   ========================================================================== */
+
+.engine-workspace {
+  flex: 1;
+  padding: 18px 18px 36px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-empty-stage {
+  margin: auto 0;
+  padding: 34px 22px;
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--glass-border);
+  text-align: center;
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.workspace-empty-stage h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.workspace-empty-stage p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+/* Reusable Sub-Section Dashboard Card Styles */
+.module-card-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.liquid-module-card {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  padding: 18px;
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.liquid-module-card:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.liquid-module-card:active {
+  transform: scale(0.98);
+}
