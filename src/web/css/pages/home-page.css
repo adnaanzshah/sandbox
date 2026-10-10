@@ -1,0 +1,27 @@
+/* ==========================================================================
+   PAGE-LEVEL STYLESHEET: HOME PAGE
+   Inherits global standards & coordinates section styling via root paths
+   ========================================================================== */
+
+@import url("/css/sections/top-section.css");
+@import url("/css/sections/body-section.css");
+@import url("/css/sections/bottom-section.css");
+@import url("/css/atoms/modal-sheet.css");
+
+.page-root-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--time-smooth);
+}
+
+.page-root-shell.is-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  display: none !important;
+}

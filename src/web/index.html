@@ -4,24 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Sandbox</title>
-  
-  <!-- Single Page Stylesheet Entry Point -->
-  <link rel="stylesheet" href="/css/main.css" />
+
+  <!-- Instant Session Splash Evaluator (Prevents repeat splash on refresh) -->
+  <script>
+    (function() {
+      var isDebug = localStorage.getItem('sb_debug_splash') === 'true';
+      var hasSeen = sessionStorage.getItem('sb_splash_seen') === 'true';
+      if (hasSeen && !isDebug) {
+        document.documentElement.classList.add('splash-bypassed');
+      }
+    })();
+  </script>
+
+  <link rel="stylesheet" href="/css/global.css" />
+  <link rel="stylesheet" href="/css/splash.css" />
+  <link rel="stylesheet" href="/css/pages/home-page.css" />
 </head>
 <body class="app-viewport">
 
-  <!-- Splash Screen Rendered Dynamically from Config -->
+  <!-- Splash Screen -->
   <section id="engineSplash" class="splash-layer" aria-hidden="true">
     <div class="splash-content">
       <h1 class="splash-brand-text">Sandbox</h1>
-      <p class="splash-sub-text">Workspace</p>
+      <p class="splash-sub-text">System Workspace</p>
     </div>
   </section>
 
-  <!-- Master Host Shell (Assembled Dynamically by Section Controllers) -->
-  <div id="appRoot" class="engine-shell is-hidden"></div>
+  <!-- Root UI Shell -->
+  <div id="appShell" class="page-root-shell"></div>
 
-  <!-- Single Page Script Entry Point -->
+  <!-- Safety Watchdog: Guarantees splash dismissal under all circumstances -->
+  <script>
+    setTimeout(function() {
+      var splash = document.getElementById('engineSplash');
+      if (splash && !splash.classList.contains('is-dismissed')) {
+        splash.classList.add('is-dismissed');
+        splash.style.setProperty('display', 'none', 'important');
+      }
+      var isDebug = localStorage.getItem('sb_debug_splash') === 'true';
+      if (!isDebug) sessionStorage.setItem('sb_splash_seen', 'true');
+    }, 900);
+  </script>
+
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>

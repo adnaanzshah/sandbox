@@ -1,0 +1,16 @@
+.atom-social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-capsule);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--time-fast), transform var(--time-fast);
+}
+
+.atom-social-btn:hover { color: var(--text-primary); }
+.atom-social-btn:active { transform: scale(0.92); }

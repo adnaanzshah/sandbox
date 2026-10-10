@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { exec } from 'child_process';
+import { db } from '../db/DatabaseManager.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,17 +31,16 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(express.static(WEB_DIR));
-app.use('/css', express.static(path.join(WEB_DIR, 'css'), {
-  setHeaders: (res, fp) => { if (fp.endsWith('.css')) res.setHeader('Content-Type', 'text/css'); }
-}));
-app.use('/js', express.static(path.join(WEB_DIR, 'js'), {
-  setHeaders: (res, fp) => { if (fp.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript'); }
+app.use(express.static(WEB_DIR, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
+    if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+  }
 }));
 
 function parseVersionManifest() {
   const vPath = path.join(ROOT_DIR, 'VERSION');
-  const manifest = { version: '2.0.16', channel: 'development', codename: 'Titanium' };
+  const manifest = { version: '2.2.0', channel: 'development', codename: 'Titanium' };
   if (fs.existsSync(vPath)) {
     const raw = fs.readFileSync(vPath, 'utf8');
     raw.split(/\r?\n/).forEach(line => {
@@ -54,6 +54,7 @@ function parseVersionManifest() {
   return manifest;
 }
 
+// Single Source of Truth Config Route
 app.get('/api/config', (req, res) => {
   const configPath = path.join(SRC_DIR, 'config', 'config.json');
   let configData = {};
@@ -62,7 +63,6 @@ app.get('/api/config', (req, res) => {
       configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     } catch (e) {}
   }
-  
   const versionData = parseVersionManifest();
   configData.system = {
     ...configData.system,
@@ -70,10 +70,10 @@ app.get('/api/config', (req, res) => {
     channel: versionData.channel,
     codename: versionData.codename
   };
-
   res.json(configData);
 });
 
+// Update Status Route
 app.get('/api/update/status', (req, res) => {
   const statePath = path.join(RUNTIME_DIR, 'update_state.json');
   let state = { update_available: false, remote_version: '' };
@@ -88,26 +88,75 @@ app.get('/api/update/status', (req, res) => {
   });
 });
 
+// Resilient Git Pull with 8-second Timeout
 app.post('/api/update/apply', (req, res) => {
-  const pullCommand = 'git checkout -- src/runtime/ 2>nul || true && git pull --ff-only origin master';
-  
-  exec(pullCommand, { cwd: ROOT_DIR }, (err, stdout, stderr) => {
+  const command = process.platform === 'win32'
+    ? 'git checkout -- src/runtime/ 2>nul || (exit 0) & git pull --ff-only origin master'
+    : 'git checkout -- src/runtime/ 2>/dev/null || true; git pull --ff-only origin master';
+
+  exec(command, { cwd: ROOT_DIR, timeout: 8000 }, (err, stdout, stderr) => {
     if (err) {
-      exec('git checkout -- src/runtime/ ; git pull --ff-only origin master', { cwd: ROOT_DIR }, (fallbackErr, fallbackStdout, fallbackStderr) => {
-        if (fallbackErr) {
-          return res.status(500).json({ success: false, error: fallbackStderr || stderr });
-        }
-        res.json({ success: true, new_version: parseVersionManifest().version });
-      });
-      return;
+      return res.status(500).json({ success: false, error: stderr || err.message });
+    }
+    // Clear update state flag
+    const statePath = path.join(RUNTIME_DIR, 'update_state.json');
+    if (fs.existsSync(statePath)) {
+      try { fs.writeFileSync(statePath, JSON.stringify({ update_available: false }), 'utf8'); } catch (e) {}
     }
     res.json({ success: true, new_version: parseVersionManifest().version });
   });
 });
 
+// Process Management APIs (For Settings GUI)
+app.get('/api/services/status', (req, res) => {
+  const readPid = (fname) => {
+    const p = path.join(RUNTIME_DIR, fname);
+    if (fs.existsSync(p)) {
+      try { return parseInt(fs.readFileSync(p, 'utf8').trim(), 10); } catch (e) { return null; }
+    }
+    return null;
+  };
+
+  res.json({
+    webServer: { running: true, pid: process.pid, port: PORT },
+    updater: { pid: readPid('updater.pid') },
+    doctor: { pid: readPid('doctor.pid') }
+  });
+});
+
+app.post('/api/services/restart', (req, res) => {
+  const pyCmd = process.platform === 'win32' ? 'py' : 'python';
+  res.json({ success: true, message: 'Restart dispatched' });
+  setTimeout(() => {
+    exec(`${pyCmd} server.py restart`, { cwd: ROOT_DIR });
+  }, 300);
+});
+
+// Doctor Diagnostics API
+app.get('/api/doctor/diagnose', (req, res) => {
+  const logPath = path.join(RUNTIME_DIR, 'doctor.log');
+  let logs = 'No logs available.';
+  if (fs.existsSync(logPath)) {
+    try {
+      const data = fs.readFileSync(logPath, 'utf8');
+      logs = data.split(/\r?\n/).slice(-15).join('\n');
+    } catch (e) {}
+  }
+  res.json({ success: true, recentLogs: logs });
+});
+
+// Database Health Route
+app.get('/api/db/health', async (req, res) => {
+  const health = await db.getHealth();
+  res.json(health);
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(WEB_DIR, 'index.html'));
 });
+
+// Initialize DB on boot
+db.init();
 
 app.listen(PORT, HOST, () => {
   console.log(`\nPlatform Web Server active at http://localhost:${PORT}\n`);

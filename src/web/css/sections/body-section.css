@@ -1,0 +1,30 @@
+.section-body-workspace {
+  flex: 1;
+  padding: 18px 18px 36px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.atom-workspace-stage {
+  margin: auto 0;
+  padding: 34px 22px;
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--glass-border);
+  text-align: center;
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.atom-workspace-stage h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.atom-workspace-stage p {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}

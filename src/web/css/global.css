@@ -1,11 +1,11 @@
 /* ==========================================================================
-   DESIGN TOKENS - MONOCHROME LIQUID GLASS
+   GLOBAL SYSTEM DESIGN TOKENS (THE SYSTEM BRAIN)
    ========================================================================== */
 :root {
-  --font-family-apple: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --transition-bezier: cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-fast: 220ms var(--transition-bezier);
-  --transition-smooth: 450ms var(--transition-bezier);
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  --bezier-fluid: cubic-bezier(0.16, 1, 0.3, 1);
+  --time-fast: 220ms var(--bezier-fluid);
+  --time-smooth: 450ms var(--bezier-fluid);
   --radius-capsule: 9999px;
   --radius-cell: 16px;
   --radius-card: 22px;
@@ -17,7 +17,6 @@
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.55);
   --text-tertiary: rgba(255, 255, 255, 0.30);
-  
   --glass-fill: rgba(24, 24, 27, 0.65);
   --glass-fill-hover: rgba(39, 39, 42, 0.75);
   --glass-border: rgba(255, 255, 255, 0.12);
@@ -25,6 +24,7 @@
   --glass-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.65);
   --glass-blur: 28px;
   --glass-saturate: 180%;
+  --accent-green: #34c759;
 }
 
 [data-theme="light"] {
@@ -33,7 +33,6 @@
   --text-primary: #000000;
   --text-secondary: rgba(0, 0, 0, 0.55);
   --text-tertiary: rgba(0, 0, 0, 0.30);
-  
   --glass-fill: rgba(255, 255, 255, 0.75);
   --glass-fill-hover: rgba(245, 245, 247, 0.85);
   --glass-border: rgba(0, 0, 0, 0.08);
@@ -41,4 +40,33 @@
   --glass-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.06);
   --glass-blur: 28px;
   --glass-saturate: 180%;
+  --accent-green: #28cd41;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+::-webkit-scrollbar {
+  display: none;
+}
+
+body.app-viewport {
+  background-color: var(--bg-core);
+  color: var(--text-primary);
+  font-family: var(--font-system);
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100vw;
+  width: 100dvw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: background-color var(--time-smooth), color var(--time-smooth);
 }
