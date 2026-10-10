@@ -1,30 +1,30 @@
 {
   "designSystem": {
-    "philosophy": "Strict Monochrome Liquid Glass",
+    "philosophy": "Strict Binary Black & White",
     "colorTokens": {
       "dark": {
         "bgCore": "#000000",
-        "bgSurface": "#0c0c0c",
+        "bgSurface": "#000000",
         "textPrimary": "#ffffff",
-        "textSecondary": "rgba(255, 255, 255, 0.60)",
-        "textTertiary": "rgba(255, 255, 255, 0.35)",
-        "glassFill": "rgba(255, 255, 255, 0.06)",
-        "glassFillHover": "rgba(255, 255, 255, 0.10)",
-        "glassBorder": "rgba(255, 255, 255, 0.12)",
-        "glassSpecular": "rgba(255, 255, 255, 0.18)",
-        "glassShadow": "0 20px 50px rgba(0, 0, 0, 0.80)"
+        "textSecondary": "#ffffff",
+        "textTertiary": "#ffffff",
+        "glassFill": "transparent",
+        "glassFillHover": "transparent",
+        "glassBorder": "#ffffff",
+        "glassSpecular": "transparent",
+        "glassShadow": "none"
       },
       "light": {
         "bgCore": "#ffffff",
-        "bgSurface": "#f4f4f4",
+        "bgSurface": "#ffffff",
         "textPrimary": "#000000",
-        "textSecondary": "rgba(0, 0, 0, 0.60)",
-        "textTertiary": "rgba(0, 0, 0, 0.35)",
-        "glassFill": "rgba(0, 0, 0, 0.04)",
-        "glassFillHover": "rgba(0, 0, 0, 0.07)",
-        "glassBorder": "rgba(0, 0, 0, 0.10)",
-        "glassSpecular": "rgba(255, 255, 255, 0.90)",
-        "glassShadow": "0 14px 40px rgba(0, 0, 0, 0.08)"
+        "textSecondary": "#000000",
+        "textTertiary": "#000000",
+        "glassFill": "transparent",
+        "glassFillHover": "transparent",
+        "glassBorder": "#000000",
+        "glassSpecular": "transparent",
+        "glassShadow": "none"
       }
     },
     "geometry": {
@@ -33,10 +33,10 @@
       "radiusCard": "28px"
     },
     "optical": {
-      "blur": "40px",
-      "saturate": "180%",
-      "transitionFast": "180ms cubic-bezier(0.16, 1, 0.3, 1)",
-      "transitionSmooth": "350ms cubic-bezier(0.16, 1, 0.3, 1)"
+      "blur": "0px",
+      "saturate": "100%",
+      "transitionFast": "0ms",
+      "transitionSmooth": "0ms"
     }
   },
   "constraints": {
@@ -46,8 +46,9 @@
       "modalAlignment": "center"
     },
     "forbiddenColors": [
-      "green", "red", "blue", "yellow", "purple", "orange",
-      "#34c759", "#ff3b30", "#007aff", "#5856d6", "#ff9500"
+      "gray", "grey", "silver", "slate",
+      "#0c0c0c", "#f4f4f4", "#888888", "#1c1c1e", "#787880",
+      "green", "red", "blue", "yellow", "purple", "orange"
     ]
   }
 }

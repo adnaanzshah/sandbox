@@ -1,0 +1,17 @@
+{
+  "projectManifest": "2.5.0-dev",
+  "files": [
+    { "name": "VERSION", "path": "VERSION" },
+    { "name": ".gitignore", "path": ".gitignore" },
+    { "name": "FILES.json", "path": "FILES.json" },
+    { "name": "server.py", "path": "server.py" },
+    { "name": "package.json", "path": "src/package.json" },
+    { "name": "rules.json", "path": "src/config/rules.json" },
+    { "name": "config.json", "path": "src/config/config.json" },
+    { "name": "versionReader.mjs", "path": "src/server/versionReader.mjs" },
+    { "name": "rulesEngine.mjs", "path": "src/server/rulesEngine.mjs" },
+    { "name": "server.mjs", "path": "src/server/server.mjs" },
+    { "name": "doctor.py", "path": "src/checker/doctor.py" },
+    { "name": "worker.py", "path": "src/updater/worker.py" }
+  ]
+}
