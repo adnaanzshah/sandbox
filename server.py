@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 """
-Universal Silent Process Manager
-Usage:
-    python server.py start
-    python server.py stop
-    python server.py status
-    python server.py restart
+Universal Process Supervisor
+Windows usage:  py server.py start | stop | status | restart
+Android usage:  python server.py start | stop | status | restart
 """
 
 import os
@@ -23,17 +20,21 @@ DETACHED_PROCESS = 0x00000008 if platform.system().lower() == "windows" else 0
 class UniversalServerManager:
     def __init__(self, target_platform=None):
         self.root_dir = Path(__file__).resolve().parent
+        self.src_dir = self.root_dir / "src"
+        self.runtime_dir = self.src_dir / "runtime"
+        self.runtime_dir.mkdir(parents=True, exist_ok=True)
+
         self.system = target_platform or self._detect_platform()
-        self.server_pid_file = self.root_dir / ".server.pid"
-        self.updater_pid_file = self.root_dir / "updater" / ".updater.pid"
-        self.server_log = self.root_dir / "server.log"
-        self.updater_log = self.root_dir / "updater" / "updater.log"
+        self.server_script = self.src_dir / "server" / "server.mjs"
+        self.worker_script = self.src_dir / "updater" / "worker.py"
+
+        self.server_pid_file = self.runtime_dir / "server.pid"
+        self.updater_pid_file = self.runtime_dir / "updater.pid"
+        self.server_log = self.runtime_dir / "server.log"
+        self.updater_log = self.runtime_dir / "updater.log"
 
     def _detect_platform(self):
-        system = platform.system().lower()
-        if "windows" in system:
-            return "windows"
-        return "android"
+        return "windows" if "windows" in platform.system().lower() else "android"
 
     def _read_pid(self, pid_file: Path):
         if pid_file.is_file():
@@ -61,9 +62,30 @@ class UniversalServerManager:
         except (OSError, subprocess.SubprocessError):
             return False
 
+    def _kill_pid(self, pid: int):
+        if not pid or not self._is_running(pid):
+            return
+        try:
+            if self.system == "windows":
+                # /T kills the entire process tree including spawned children
+                subprocess.run(
+                    f"taskkill /T /F /PID {pid}",
+                    shell=True,
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=CREATE_NO_WINDOW
+                )
+            else:
+                os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
+
     def _ensure_dependencies(self):
         node_modules = self.root_dir / "node_modules" / "express"
-        if not node_modules.exists():
+        src_modules = self.src_dir / "node_modules" / "express"
+
+        if not node_modules.exists() and not src_modules.exists():
             print("[AUTO-FIX] Installing Express module...")
             npm_cmd = "npm.cmd" if self.system == "windows" else "npm"
             subprocess.run(
@@ -94,13 +116,15 @@ class UniversalServerManager:
         # 1. Start Server
         s_pid = self._read_pid(self.server_pid_file)
         if self._is_running(s_pid):
-            print(f"[STATUS] Server already running (PID: {s_pid}).")
+            print(f"[STATUS] Web Server already running (PID: {s_pid}).")
         else:
-            print(f"[START] Launching Server on {self.system.capitalize()}...")
+            print(f"[START] Launching Web Server on {self.system.capitalize()}...")
             s_log = open(self.server_log, "a", encoding="utf-8")
+            cmd = ["node", str(self.server_script)]
+
             if self.system == "windows":
                 node_proc = subprocess.Popen(
-                    ["node", "server.mjs"],
+                    cmd,
                     cwd=str(self.root_dir),
                     stdout=s_log,
                     stderr=s_log,
@@ -109,7 +133,7 @@ class UniversalServerManager:
                 )
             else:
                 node_proc = subprocess.Popen(
-                    ["node", "server.mjs"],
+                    cmd,
                     cwd=str(self.root_dir),
                     stdout=s_log,
                     stderr=s_log,
@@ -117,21 +141,21 @@ class UniversalServerManager:
                     start_new_session=True,
                 )
             self.server_pid_file.write_text(str(node_proc.pid), encoding="utf-8")
-            print(f"[SUCCESS] Server active (PID: {node_proc.pid}).")
+            print(f"[SUCCESS] Web Server started (PID: {node_proc.pid}).")
 
-        # 2. Start Updater
+        # 2. Start Linked Updater Daemon
         u_pid = self._read_pid(self.updater_pid_file)
         if self._is_running(u_pid):
-            print(f"[STATUS] Updater already running (PID: {u_pid}).")
+            print(f"[STATUS] Updater Daemon already running (PID: {u_pid}).")
         else:
-            print("[START] Launching 15s Updater Daemon silently...")
-            worker_script = self.root_dir / "updater" / "worker.py"
-            (self.root_dir / "updater").mkdir(parents=True, exist_ok=True)
+            print("[START] Launching Linked Updater Daemon...")
             u_log = open(self.updater_log, "a", encoding="utf-8")
+            py_bin = sys.executable
+            cmd = [py_bin, str(self.worker_script)]
 
             if self.system == "windows":
                 py_proc = subprocess.Popen(
-                    [sys.executable, str(worker_script)],
+                    cmd,
                     cwd=str(self.root_dir),
                     stdout=u_log,
                     stderr=u_log,
@@ -140,7 +164,7 @@ class UniversalServerManager:
                 )
             else:
                 py_proc = subprocess.Popen(
-                    [sys.executable, str(worker_script)],
+                    cmd,
                     cwd=str(self.root_dir),
                     stdout=u_log,
                     stderr=u_log,
@@ -148,65 +172,59 @@ class UniversalServerManager:
                     start_new_session=True,
                 )
             self.updater_pid_file.write_text(str(py_proc.pid), encoding="utf-8")
-            print(f"[SUCCESS] Updater active (PID: {py_proc.pid}).")
+            print(f"[SUCCESS] Updater Daemon started (PID: {py_proc.pid}).")
 
         print("\n---------------------------------------------------------")
         print(" Platform URL: http://localhost:3000")
-        print(" Terminal freed. Background tasks detached.")
+        print(" Runtime logs: src/runtime/")
         print("---------------------------------------------------------\n")
 
     def stop(self):
         print(f"[STOP] Halting services on {self.system.capitalize()}...")
+
+        # 1. Kill Updater
         u_pid = self._read_pid(self.updater_pid_file)
-        if self._is_running(u_pid):
-            try:
-                if self.system == "windows":
-                    subprocess.run(f"taskkill /F /PID {u_pid}", shell=True, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=CREATE_NO_WINDOW)
-                else:
-                    os.kill(u_pid, signal.SIGTERM)
-                print(f"[STOP] Updater halted (PID: {u_pid}).")
-            except Exception:
-                pass
+        if u_pid:
+            self._kill_pid(u_pid)
+            print(f"[STOP] Updater Daemon stopped (PID: {u_pid}).")
         if self.updater_pid_file.is_file():
             self.updater_pid_file.unlink()
 
+        # 2. Kill Server
         s_pid = self._read_pid(self.server_pid_file)
-        if self._is_running(s_pid):
-            try:
-                if self.system == "windows":
-                    subprocess.run(f"taskkill /F /PID {s_pid}", shell=True, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=CREATE_NO_WINDOW)
-                else:
-                    os.kill(s_pid, signal.SIGTERM)
-                print(f"[STOP] Server halted (PID: {s_pid}).")
-            except Exception:
-                pass
+        if s_pid:
+            self._kill_pid(s_pid)
+            print(f"[STOP] Web Server stopped (PID: {s_pid}).")
         if self.server_pid_file.is_file():
             self.server_pid_file.unlink()
 
         self._release_wake_lock()
-        print("[CLEAN] All processes terminated.")
+        print("[CLEAN] All processes stopped.")
 
     def status(self):
         s_pid = self._read_pid(self.server_pid_file)
         u_pid = self._read_pid(self.updater_pid_file)
-        print(f"=== System Runtime Status [{self.system.capitalize()}] ===")
-        print(f"Server      : {'RUNNING (PID: ' + str(s_pid) + ') -> http://localhost:3000' if self._is_running(s_pid) else 'STOPPED'}")
-        print(f"Updater 15s : {'RUNNING (PID: ' + str(u_pid) + ')' if self._is_running(u_pid) else 'STOPPED'}")
+
+        print(f"=== Platform Status [{self.system.capitalize()}] ===")
+        print(f"Web Server   : {'RUNNING (PID: ' + str(s_pid) + ') -> http://localhost:3000' if self._is_running(s_pid) else 'STOPPED'}")
+        print(f"Updater 15s  : {'RUNNING (PID: ' + str(u_pid) + ')' if self._is_running(u_pid) else 'STOPPED'}")
 
 
 def main():
     args = sys.argv[1:]
     target_platform = None
+
     if len(args) >= 2 and args[0].lower() in ["android", "windows"]:
         target_platform = args[0].lower()
         action = args[1].lower()
     elif len(args) >= 1:
         action = args[0].lower()
     else:
-        print("Usage: python server.py [android|windows] {start|stop|restart|status}")
+        print("Usage: py server.py [windows|android] {start|stop|restart|status}")
         sys.exit(1)
 
     manager = UniversalServerManager(target_platform=target_platform)
+
     if action == "start":
         manager.start()
     elif action == "stop":

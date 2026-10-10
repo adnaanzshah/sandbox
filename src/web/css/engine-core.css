@@ -157,7 +157,7 @@ body.app-viewport {
   flex-direction: column;
 }
 
-/* Compact Footer */
+/* Professional Space-Optimized Footer */
 .engine-footer {
   margin-top: auto;
   padding: 10px 18px;
@@ -170,8 +170,24 @@ body.app-viewport {
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
-.footer-left { display: flex; align-items: center; gap: 10px; }
-.compact-author { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-credit-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.compact-author {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
 .telemetry-compact {
   font-size: 0.72rem;
   font-weight: 500;
@@ -179,9 +195,15 @@ body.app-viewport {
   padding: 2px 8px;
   border-radius: var(--radius-capsule);
   background: rgba(120, 120, 128, 0.12);
+  margin-left: 4px;
 }
 
-.footer-right { display: flex; align-items: center; gap: 8px; }
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .social-compact-btn {
   display: inline-flex;
   align-items: center;

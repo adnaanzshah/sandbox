@@ -2,10 +2,11 @@
   "system": {
     "platformName": "Sandbox",
     "codename": "Titanium",
-    "version": "2.0.8"
+    "version": "2.0.9"
   },
   "user": {
     "displayName": "Adnaan Shah",
+    "footerCredit": "Engineered & Crafted by",
     "github": "https://github.com/adnaanzshah",
     "linkedin": "https://linkedin.com/in/adnaanzshah",
     "email": "adnaan.shah.work@gmail.com"
@@ -13,14 +14,7 @@
   "splash": {
     "primaryTitle": "Sandbox",
     "secondarySubtitle": "System Workspace",
-    "durationMs": 1000
+    "durationMs": 900
   },
-  "modules": [
-    {
-      "id": "wealth",
-      "name": "Wealth Manager",
-      "route": "/pages/wealth/",
-      "status": "planned"
-    }
-  ]
+  "modules": []
 }
