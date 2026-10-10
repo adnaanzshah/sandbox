@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-Universal Service Orchestrator (v2.4.0)
-Decouples services so Doctor and Updater run as persistent daemons.
+Universal Service Orchestrator (v2.4.0 Baseline)
+Supervises web server and future daemons.
 Usage:
-  py server.py start          -> Ensures all services running
-  py server.py restart        -> Restarts ONLY the Web Server (Daemons stay alive)
-  py server.py restart-all    -> Restarts Web Server, Doctor, and Updater
-  py server.py stop           -> Stops ONLY the Web Server
-  py server.py stop-all       -> Stops all services
-  py server.py status         -> Checks all services
-  py server.py update         -> Executes safe automated git pull
+  py server.py start
+  py server.py stop
+  py server.py restart
+  py server.py status
+  py server.py update
 """
 
 import os
@@ -34,16 +32,8 @@ class UniversalServerManager:
 
         self.system = target_platform or ("windows" if "windows" in platform.system().lower() else "android")
         self.server_script = self.src_dir / "server" / "server.mjs"
-        self.worker_script = self.src_dir / "updater" / "worker.py"
-        self.doctor_script = self.src_dir / "checker" / "doctor.py"
-
         self.server_pid_file = self.runtime_dir / "server.pid"
-        self.updater_pid_file = self.runtime_dir / "updater.pid"
-        self.doctor_pid_file = self.runtime_dir / "doctor.pid"
-
         self.server_log = self.runtime_dir / "server.log"
-        self.updater_log = self.runtime_dir / "updater.log"
-        self.doctor_log = self.runtime_dir / "doctor.log"
 
     def _read_pid(self, pid_file: Path):
         if pid_file.is_file():
@@ -89,6 +79,18 @@ class UniversalServerManager:
         except Exception:
             pass
 
+    def _ensure_dependencies(self):
+        node_modules = self.src_dir / "node_modules" / "express"
+        if not node_modules.exists():
+            print("[AUTO-FIX] Installing Express module in src/...", flush=True)
+            npm_cmd = "npm.cmd" if self.system == "windows" else "npm"
+            subprocess.run(
+                [npm_cmd, "install", "express", "--silent"],
+                cwd=str(self.src_dir),
+                check=False,
+                creationflags=CREATE_NO_WINDOW
+            )
+
     def _launch_detached(self, cmd: list, log_path: Path) -> int:
         log_file = open(log_path, "a", encoding="utf-8")
         if self.system == "windows":
@@ -111,79 +113,47 @@ class UniversalServerManager:
             )
         return proc.pid
 
-    def start_server_only(self):
+    def start(self):
+        self._ensure_dependencies()
         s_pid = self._read_pid(self.server_pid_file)
         if not self._is_running(s_pid):
             pid = self._launch_detached(["node", str(self.server_script)], self.server_log)
             self.server_pid_file.write_text(str(pid), encoding="utf-8")
             print(f"[START] Web Server active (PID: {pid}).", flush=True)
+        else:
+            print(f"[STATUS] Web Server already running (PID: {s_pid}).", flush=True)
 
-    def stop_server_only(self):
+        print("\n---------------------------------------------------------")
+        print(" Platform URL: http://localhost:3000")
+        print(" Logs directory: src/runtime/server.log")
+        print("---------------------------------------------------------\n", flush=True)
+
+    def stop(self):
         s_pid = self._read_pid(self.server_pid_file)
         if s_pid:
             self._kill_pid(s_pid)
             print(f"[STOP] Web Server stopped (PID: {s_pid}).", flush=True)
         if self.server_pid_file.is_file():
-            try: self.server_pid_file.unlink()
-            except OSError: pass
-
-    def start(self):
-        # 1. Start Persistent File Doctor if not running
-        d_pid = self._read_pid(self.doctor_pid_file)
-        if not self._is_running(d_pid):
-            pid = self._launch_detached([sys.executable, str(self.doctor_script)], self.doctor_log)
-            self.doctor_pid_file.write_text(str(pid), encoding="utf-8")
-            print(f"[START] File Doctor active (PID: {pid}).", flush=True)
-
-        # 2. Start Persistent Updater if not running
-        u_pid = self._read_pid(self.updater_pid_file)
-        if not self._is_running(u_pid):
-            pid = self._launch_detached([sys.executable, str(self.worker_script)], self.updater_log)
-            self.updater_pid_file.write_text(str(pid), encoding="utf-8")
-            print(f"[START] Updater Daemon active (PID: {pid}).", flush=True)
-
-        # 3. Start Web Server
-        self.start_server_only()
-
-        print("\n---------------------------------------------------------")
-        print(" Platform URL: http://localhost:3000")
-        print(" Daemons running persistently. Logs in src/runtime/")
-        print("---------------------------------------------------------\n", flush=True)
+            try:
+                self.server_pid_file.unlink()
+            except OSError:
+                pass
+        print("[CLEAN] Processes stopped.", flush=True)
 
     def restart(self):
-        """Restarts ONLY the Web Server. Persistent Daemons stay alive!"""
-        print("[RESTART] Cycling Web Server (Persistent daemons remain active)...", flush=True)
-        self.stop_server_only()
+        print("[RESTART] Cycling Web Server...", flush=True)
+        self.stop()
         time.sleep(1.2)
-        self.start_server_only()
-        print("[SUCCESS] Web Server restarted successfully.", flush=True)
-
-    def stop(self):
-        self.stop_server_only()
-
-    def stop_all(self):
-        print("[STOP-ALL] Halting all services and daemons...", flush=True)
-        for pid_file, name in [(self.doctor_pid_file, "Doctor"), (self.updater_pid_file, "Updater"), (self.server_pid_file, "Web Server")]:
-            pid = self._read_pid(pid_file)
-            if pid:
-                self._kill_pid(pid)
-                print(f"[STOP] {name} stopped (PID: {pid}).", flush=True)
-            if pid_file.is_file():
-                try: pid_file.unlink()
-                except OSError: pass
-        print("[CLEAN] All services stopped.", flush=True)
+        self.start()
 
     def status(self):
         s_pid = self._read_pid(self.server_pid_file)
-        u_pid = self._read_pid(self.updater_pid_file)
-        d_pid = self._read_pid(self.doctor_pid_file)
+        is_live = self._is_running(s_pid)
         print(f"=== Platform Status [{self.system.capitalize()}] ===")
-        print(f"Web Server   : {'RUNNING (PID: ' + str(s_pid) + ') -> http://localhost:3000' if self._is_running(s_pid) else 'STOPPED'}")
-        print(f"Updater 15s  : {'RUNNING (PID: ' + str(u_pid) + ') [PERSISTENT]' if self._is_running(u_pid) else 'STOPPED'}")
-        print(f"File Doctor  : {'RUNNING (PID: ' + str(d_pid) + ') [PERSISTENT]' if self._is_running(d_pid) else 'STOPPED'}")
+        print(f"Web Server : {'RUNNING (PID: ' + str(s_pid) + ') -> http://localhost:3000' if is_live else 'STOPPED'}")
 
     def force_update(self):
-        print("[FORCE UPDATE] Performing automated self-healing git pull...", flush=True)
+        print("[FORCE UPDATE] Performing automated clean git pull...", flush=True)
         subprocess.run(["git", "fetch", "origin", "master"], cwd=str(self.root_dir), check=False)
         res = subprocess.run(["git", "reset", "--hard", "origin/master"], cwd=str(self.root_dir), text=True, capture_output=True)
         if res.returncode == 0:
@@ -203,18 +173,13 @@ def main():
     elif len(args) >= 1:
         action = args[0].lower()
     else:
-        print("Usage: py server.py [start|stop|stop-all|restart|restart-all|status|update]")
+        print("Usage: py server.py [windows|android] {start|stop|restart|status|update}")
         sys.exit(1)
 
     manager = UniversalServerManager(target_platform=target_platform)
     if action == "start": manager.start()
     elif action == "stop": manager.stop()
-    elif action == "stop-all": manager.stop_all()
     elif action == "restart": manager.restart()
-    elif action == "restart-all":
-        manager.stop_all()
-        time.sleep(1.2)
-        manager.start()
     elif action == "status": manager.status()
     elif action == "update": manager.force_update()
     else:

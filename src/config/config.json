@@ -1,29 +1,16 @@
 {
   "system": {
     "projectName": "Sandbox",
-    "portalBadge": "System Workspace",
-    "version": "2.2.0"
+    "version": "2.4.0",
+    "portalBadge": "Core Workspace"
   },
   "user": {
     "displayName": "Adnaan Shah",
     "creditTitle": "Engineered & Crafted by",
-    "githubUrl": "https://github.com/adnaanzshah",
-    "linkedinUrl": "https://linkedin.com/in/adnaanzshah",
-    "emailAddress": "adnaan.shah.work@gmail.com"
+    "githubUrl": "https://github.com/adnaanzshah"
   },
-  "defaults": {
-    "themeMode": "auto",
-    "debugSplash": false
-  },
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "user": "postgres",
-    "password": "",
-    "database": "sandbox_db"
-  },
-  "splash": {
-    "durationMs": 850
-  },
-  "modules": []
+  "network": {
+    "port": 3000,
+    "host": "0.0.0.0"
+  }
 }
