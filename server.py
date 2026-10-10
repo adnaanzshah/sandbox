@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Universal Process Supervisor
-Windows usage:  py server.py start | stop | status | restart
-Android usage:  python server.py start | stop | status | restart
+Universal Silent Process Supervisor & Force Updater
+Windows usage:  py server.py [start|stop|status|restart|update]
+Android usage:  python server.py [start|stop|status|restart|update]
 """
 
 import os
@@ -67,7 +67,6 @@ class UniversalServerManager:
             return
         try:
             if self.system == "windows":
-                # /T kills the entire process tree including spawned children
                 subprocess.run(
                     f"taskkill /T /F /PID {pid}",
                     shell=True,
@@ -82,15 +81,15 @@ class UniversalServerManager:
             pass
 
     def _ensure_dependencies(self):
-        node_modules = self.root_dir / "node_modules" / "express"
-        src_modules = self.src_dir / "node_modules" / "express"
+        node_modules = self.src_dir / "node_modules" / "express"
+        root_modules = self.root_dir / "node_modules" / "express"
 
-        if not node_modules.exists() and not src_modules.exists():
+        if not node_modules.exists() and not root_modules.exists():
             print("[AUTO-FIX] Installing Express module...")
             npm_cmd = "npm.cmd" if self.system == "windows" else "npm"
             subprocess.run(
                 [npm_cmd, "install", "express", "--silent"],
-                cwd=str(self.root_dir),
+                cwd=str(self.src_dir),
                 check=False,
                 creationflags=CREATE_NO_WINDOW
             )
@@ -150,8 +149,7 @@ class UniversalServerManager:
         else:
             print("[START] Launching Linked Updater Daemon...")
             u_log = open(self.updater_log, "a", encoding="utf-8")
-            py_bin = sys.executable
-            cmd = [py_bin, str(self.worker_script)]
+            cmd = [sys.executable, str(self.worker_script)]
 
             if self.system == "windows":
                 py_proc = subprocess.Popen(
@@ -182,7 +180,6 @@ class UniversalServerManager:
     def stop(self):
         print(f"[STOP] Halting services on {self.system.capitalize()}...")
 
-        # 1. Kill Updater
         u_pid = self._read_pid(self.updater_pid_file)
         if u_pid:
             self._kill_pid(u_pid)
@@ -190,7 +187,6 @@ class UniversalServerManager:
         if self.updater_pid_file.is_file():
             self.updater_pid_file.unlink()
 
-        # 2. Kill Server
         s_pid = self._read_pid(self.server_pid_file)
         if s_pid:
             self._kill_pid(s_pid)
@@ -209,6 +205,20 @@ class UniversalServerManager:
         print(f"Web Server   : {'RUNNING (PID: ' + str(s_pid) + ') -> http://localhost:3000' if self._is_running(s_pid) else 'STOPPED'}")
         print(f"Updater 15s  : {'RUNNING (PID: ' + str(u_pid) + ')' if self._is_running(u_pid) else 'STOPPED'}")
 
+    def force_update(self):
+        print("[FORCE UPDATE] Performing clean remote fast-forward pull...")
+        subprocess.run(["git", "checkout", "--", "src/runtime/"], cwd=str(self.root_dir), check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        res = subprocess.run(["git", "pull", "--ff-only", "origin", "master"], cwd=str(self.root_dir), text=True, capture_output=True)
+        if res.returncode == 0:
+            print("[SUCCESS] Platform pulled latest code:")
+            print(res.stdout.strip())
+            print("[RESTARTING] Reloading background services...")
+            self.stop()
+            time.sleep(1)
+            self.start()
+        else:
+            print(f"[ERROR] Force update failed: {res.stderr.strip()}")
+
 
 def main():
     args = sys.argv[1:]
@@ -220,7 +230,7 @@ def main():
     elif len(args) >= 1:
         action = args[0].lower()
     else:
-        print("Usage: py server.py [windows|android] {start|stop|restart|status}")
+        print("Usage: py server.py [windows|android] {start|stop|restart|status|update}")
         sys.exit(1)
 
     manager = UniversalServerManager(target_platform=target_platform)
@@ -235,6 +245,8 @@ def main():
         manager.start()
     elif action == "status":
         manager.status()
+    elif action == "update":
+        manager.force_update()
     else:
         print(f"Unknown action: {action}")
         sys.exit(1)

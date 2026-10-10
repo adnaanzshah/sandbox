@@ -5,15 +5,8 @@ __pycache__/
 .venv/
 env/
 *.pid
-.server.pid
-updater/.updater.pid
 *.log
-server.log
-updater/updater.log
-updater/.update_state.json
-*.sqlite
-*.sqlite3
-*.db
+src/runtime/
 .env
 .vscode/
 .idea/

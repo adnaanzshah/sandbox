@@ -40,7 +40,7 @@ app.use('/js', express.static(path.join(WEB_DIR, 'js'), {
 
 function parseVersionManifest() {
   const vPath = path.join(ROOT_DIR, 'VERSION');
-  const manifest = { version: '2.0.12', channel: 'development', codename: 'Titanium' };
+  const manifest = { version: '2.0.13', channel: 'development', codename: 'Titanium' };
   if (fs.existsSync(vPath)) {
     const raw = fs.readFileSync(vPath, 'utf8');
     raw.split(/\r?\n/).forEach(line => {

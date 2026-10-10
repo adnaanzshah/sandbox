@@ -39,8 +39,7 @@ class PrecisionUpdateWorker:
         print(f"[{timestamp}] {message}", flush=True)
 
     def parse_manifest(self, text: str) -> dict:
-        data = {"version": "Unknown",
-                "channel": "development", "codename": "Titanium"}
+        data = {"version": "Unknown", "channel": "development", "codename": "Titanium"}
         for line in text.splitlines():
             line = line.strip()
             if "=" in line and not line.startswith("#"):
@@ -80,8 +79,7 @@ class PrecisionUpdateWorker:
             "last_checked": time.time()
         }
         try:
-            self.state_file.write_text(json.dumps(
-                state, indent=2), encoding="utf-8")
+            self.state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
         except OSError:
             pass
 
@@ -94,14 +92,12 @@ class PrecisionUpdateWorker:
         return {"update_available": False, "remote_version": "", "available_since": None}
 
     def execute_git_pull(self) -> bool:
-        code, branch, _ = self.run_cmd(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        code, branch, _ = self.run_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         if code != 0 or not branch:
             branch = "master"
 
         self.log(f"[PULL] Applying fast-forward pull on branch '{branch}'...")
-        code, _, err = self.run_cmd(
-            ["git", "pull", "--ff-only", "origin", branch])
+        code, _, err = self.run_cmd(["git", "pull", "--ff-only", "origin", branch])
         if code == 0:
             self.log("[SUCCESS] Git pull complete.")
             self.write_state(False, "", None)
@@ -111,18 +107,15 @@ class PrecisionUpdateWorker:
             return False
 
     def probe_remote(self):
-        code, branch, _ = self.run_cmd(
-            ["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        code, branch, _ = self.run_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"])
         if code != 0 or not branch or branch == "HEAD":
             return
 
-        code, _, _ = self.run_cmd(
-            ["git", "fetch", "origin", branch, "--quiet"])
+        code, _, _ = self.run_cmd(["git", "fetch", "origin", branch, "--quiet"])
         if code != 0:
             return
 
-        code, remote_text, _ = self.run_cmd(
-            ["git", "show", f"origin/{branch}:VERSION"])
+        code, remote_text, _ = self.run_cmd(["git", "show", f"origin/{branch}:VERSION"])
         if code != 0:
             return
 
@@ -133,20 +126,17 @@ class PrecisionUpdateWorker:
         if local["version"] != remote["version"]:
             available_since = state.get("available_since") or time.time()
             self.write_state(True, remote["version"], available_since)
-            self.log(
-                f"[NOTIFY] Update available: v{local['version']} -> v{remote['version']}")
+            self.log(f"[NOTIFY] Update available: v{local['version']} -> v{remote['version']}")
 
             if (time.time() - available_since) >= self.auto_apply_seconds:
-                self.log(
-                    "[SCHEDULE] 6-hour window elapsed. Applying update automatically.")
+                self.log("[SCHEDULE] 6-hour window elapsed. Applying update automatically.")
                 self.execute_git_pull()
         else:
             if state.get("update_available"):
                 self.write_state(False, "", None)
 
     def run_loop(self):
-        self.log(
-            f"Updater worker active. Polling every {self.poll_interval}s.")
+        self.log(f"Updater worker active. Polling every {self.poll_interval}s.")
         while self.running:
             try:
                 self.probe_remote()

@@ -25,5 +25,26 @@ export class SettingsSheet {
     this.backdrop.addEventListener('click', (e) => {
       if (e.target === this.backdrop) this.backdrop.classList.add('is-hidden');
     });
+
+    const forceBtn = document.getElementById('engineForceUpdateBtn');
+    if (forceBtn) {
+      forceBtn.addEventListener('click', async () => {
+        forceBtn.innerText = 'Syncing from GitHub...';
+        try {
+          const res = await fetch('/api/update/apply', { method: 'POST' });
+          const data = await res.json();
+          if (data.success) {
+            forceBtn.innerText = 'Success! Reloading...';
+            setTimeout(() => window.location.reload(), 600);
+          } else {
+            alert('Sync failed: ' + data.error);
+            forceBtn.innerText = 'Force Sync Remote Now';
+          }
+        } catch (e) {
+          alert('Network error while forcing sync.');
+          forceBtn.innerText = 'Force Sync Remote Now';
+        }
+      });
+    }
   }
 }
