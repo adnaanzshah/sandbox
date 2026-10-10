@@ -3,4 +3,4 @@ VERSION=2.5.0-dev
 CHANNEL=development
 CODENAME=Titanium
 STATUS=under-development
-BUILD=2026.10.10.40
+BUILD=2026.10.10.41
