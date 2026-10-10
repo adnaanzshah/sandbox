@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Universal Silent Process Supervisor & File Doctor Orchestrator
-Windows usage:  py server.py [start|stop|status|restart|update]
-Android usage:  python server.py [start|stop|status|restart|update]
+Windows usage:  py server.py [start|stop|status|restart|update|detached-restart]
+Android usage:  python server.py [start|stop|status|restart|update|detached-restart]
 """
 
 import os
@@ -15,6 +15,8 @@ from pathlib import Path
 
 CREATE_NO_WINDOW = 0x08000000 if platform.system().lower() == "windows" else 0
 DETACHED_PROCESS = 0x00000008 if platform.system().lower() == "windows" else 0
+NEW_PROCESS_GROUP = 0x00000200 if platform.system().lower() == "windows" else 0
+
 
 class UniversalServerManager:
     def __init__(self, target_platform=None):
@@ -83,7 +85,6 @@ class UniversalServerManager:
     def _ensure_dependencies(self):
         node_modules = self.src_dir / "node_modules" / "express"
         if not node_modules.exists():
-            print("[AUTO-FIX] Installing Express module in src/...", flush=True)
             npm_cmd = "npm.cmd" if self.system == "windows" else "npm"
             subprocess.run(
                 [npm_cmd, "install", "express", "--silent"],
@@ -101,7 +102,7 @@ class UniversalServerManager:
                 stdout=log_file,
                 stderr=log_file,
                 stdin=subprocess.DEVNULL,
-                creationflags=DETACHED_PROCESS | CREATE_NO_WINDOW,
+                creationflags=DETACHED_PROCESS | CREATE_NO_WINDOW | NEW_PROCESS_GROUP,
             )
         else:
             proc = subprocess.Popen(
@@ -117,27 +118,21 @@ class UniversalServerManager:
     def start(self):
         self._ensure_dependencies()
 
-        # 1. Run File Doctor Audit once before launching
-        try:
-            subprocess.run([sys.executable, "-c", "import sys; sys.path.insert(0, 'src'); from checker.doctor import audit_and_heal; audit_and_heal()"], cwd=str(self.root_dir), check=False)
-        except Exception:
-            pass
-
-        # 2. Launch Doctor Daemon
+        # 1. Launch Doctor Daemon
         d_pid = self._read_pid(self.doctor_pid_file)
         if not self._is_running(d_pid):
             pid = self._launch_detached([sys.executable, str(self.doctor_script)], self.doctor_log)
             self.doctor_pid_file.write_text(str(pid), encoding="utf-8")
             print(f"[START] File Doctor active (PID: {pid}).", flush=True)
 
-        # 3. Launch Web Server
+        # 2. Launch Web Server
         s_pid = self._read_pid(self.server_pid_file)
         if not self._is_running(s_pid):
             pid = self._launch_detached(["node", str(self.server_script)], self.server_log)
             self.server_pid_file.write_text(str(pid), encoding="utf-8")
             print(f"[START] Web Server active (PID: {pid}).", flush=True)
 
-        # 4. Launch Updater Daemon
+        # 3. Launch Updater Daemon
         u_pid = self._read_pid(self.updater_pid_file)
         if not self._is_running(u_pid):
             pid = self._launch_detached([sys.executable, str(self.worker_script)], self.updater_log)
@@ -147,7 +142,7 @@ class UniversalServerManager:
         print("\n---------------------------------------------------------")
         print(" Platform URL: http://localhost:3000")
         print(" Services running detached. Logs in src/runtime/")
-        print("---------------------------------------------------------\n")
+        print("---------------------------------------------------------\n", flush=True)
 
     def stop(self):
         print(f"[STOP] Halting services on {self.system.capitalize()}...", flush=True)
@@ -157,7 +152,10 @@ class UniversalServerManager:
                 self._kill_pid(pid)
                 print(f"[STOP] {name} stopped (PID: {pid}).", flush=True)
             if pid_file.is_file():
-                pid_file.unlink()
+                try:
+                    pid_file.unlink()
+                except OSError:
+                    pass
         print("[CLEAN] All processes stopped.", flush=True)
 
     def status(self):
@@ -169,17 +167,13 @@ class UniversalServerManager:
         print(f"Updater 15s  : {'RUNNING (PID: ' + str(u_pid) + ')' if self._is_running(u_pid) else 'STOPPED'}")
         print(f"File Doctor  : {'RUNNING (PID: ' + str(d_pid) + ')' if self._is_running(d_pid) else 'STOPPED'}")
 
-    def force_update(self):
-        print("[FORCE UPDATE] Performing clean stash and fast-forward pull...", flush=True)
-        subprocess.run(["git", "checkout", "--", "src/runtime/"], cwd=str(self.root_dir), check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        res = subprocess.run(["git", "pull", "--ff-only", "origin", "master"], cwd=str(self.root_dir), text=True, capture_output=True)
-        if res.returncode == 0:
-            print("[SUCCESS] Latest code pulled.", flush=True)
-            self.stop()
-            time.sleep(1)
-            self.start()
-        else:
-            print(f"[ERROR] Update failed: {res.stderr.strip()}", flush=True)
+    def detached_restart(self):
+        """Called asynchronously in background to execute a guaranteed restart."""
+        time.sleep(0.5)
+        self.stop()
+        time.sleep(1.2)
+        self.start()
+
 
 def main():
     args = sys.argv[1:]
@@ -194,17 +188,24 @@ def main():
         sys.exit(1)
 
     manager = UniversalServerManager(target_platform=target_platform)
-    if action == "start": manager.start()
-    elif action == "stop": manager.stop()
+    if action == "start":
+        manager.start()
+    elif action == "stop":
+        manager.stop()
     elif action == "restart":
         manager.stop()
-        time.sleep(1)
+        time.sleep(1.2)
         manager.start()
-    elif action == "status": manager.status()
-    elif action == "update": manager.force_update()
+    elif action == "detached-restart":
+        manager.detached_restart()
+    elif action == "status":
+        manager.status()
+    elif action == "update":
+        manager.force_update()
     else:
         print(f"Unknown action: {action}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -1,12 +1,12 @@
 /* ==========================================================================
-   PAGE-LEVEL STYLESHEET: HOME PAGE
-   Inherits global standards & coordinates section styling via root paths
+   PAGE: HOME (CONTINUOUS LIQUID GLASS CANVAS)
    ========================================================================== */
 
 @import url("/css/sections/top-section.css");
 @import url("/css/sections/body-section.css");
 @import url("/css/sections/bottom-section.css");
 @import url("/css/atoms/modal-sheet.css");
+@import url("/css/atoms/auth-vault.css");
 
 .page-root-shell {
   display: flex;

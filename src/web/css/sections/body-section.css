@@ -1,30 +1,50 @@
 .section-body-workspace {
   flex: 1;
-  padding: 18px 18px 36px 18px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 20px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .atom-workspace-stage {
-  margin: auto 0;
-  padding: 34px 22px;
+  width: 100%;
+  padding: 42px 28px;
   border-radius: var(--radius-card);
-  border: 1px dashed var(--glass-border);
-  text-align: center;
   background: var(--glass-fill);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.atom-workspace-stage::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-specular), transparent);
 }
 
 .atom-workspace-stage h2 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .atom-workspace-stage p {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
+  font-weight: 400;
   color: var(--text-secondary);
+  line-height: 1.45;
 }

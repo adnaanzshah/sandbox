@@ -1,24 +1,18 @@
-@import url("/css/atoms/greeting.css");
-@import url("/css/atoms/update-pill.css");
-@import url("/css/atoms/icon-buttons.css");
+@import url("../atoms/greeting.css");
+@import url("../atoms/update-pill.css");
+@import url("../atoms/icon-buttons.css");
 
 .section-header-plane {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  background: var(--glass-fill);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-bottom: 1px solid var(--glass-border);
-  transition: background var(--time-smooth);
+  padding: 16px 22px;
+  background: transparent;
 }
 
 .section-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }

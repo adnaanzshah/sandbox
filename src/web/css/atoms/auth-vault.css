@@ -1,0 +1,175 @@
+/* ==========================================================================
+   AUTHENTICATION VAULT - DYNAMIC THEMED APPLE iOS LIQUID GLASS
+   ========================================================================== */
+
+.auth-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background-color: var(--bg-core);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--time-smooth), visibility var(--time-smooth), background-color var(--time-smooth);
+}
+
+.auth-lock-overlay.is-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+
+/* Floating iOS Liquid Capsule Card */
+.auth-vault-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  padding: 34px 26px 30px;
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--glass-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: background var(--time-smooth), border-color var(--time-smooth);
+}
+
+.auth-vault-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-specular), transparent);
+}
+
+/* SF Symbols Key Glyph Circle */
+.auth-glyph-orb {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-capsule);
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 1px var(--glass-specular);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+}
+
+.auth-glyph-orb svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.75;
+}
+
+.auth-vault-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.auth-vault-subtitle {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.auth-form-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* iOS Grouped Cells */
+.auth-grouped-cells {
+  background: rgba(120, 120, 128, 0.08);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-cell);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 4px 16px;
+}
+
+.auth-cell:first-child {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.auth-input-glass {
+  width: 100%;
+  height: 46px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.auth-input-glass::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* iOS Capsule Action Button */
+.auth-action-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-capsule);
+  border: 1px solid var(--glass-border);
+  background: var(--text-primary);
+  color: var(--bg-core);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+  transition: transform var(--time-fast), opacity var(--time-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-action-btn:hover {
+  opacity: 0.92;
+}
+
+.auth-action-btn:active {
+  transform: scale(0.96);
+}
+
+/* iOS Error Badge */
+.auth-error-chip {
+  display: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #ff453a;
+  background: rgba(255, 69, 58, 0.12);
+  border: 1px solid rgba(255, 69, 58, 0.28);
+  border-radius: var(--radius-capsule);
+  padding: 6px 14px;
+}

@@ -7,6 +7,7 @@ env/
 *.pid
 *.log
 src/runtime/
+src/config/secrets.json
 .env
 .vscode/
 .idea/
