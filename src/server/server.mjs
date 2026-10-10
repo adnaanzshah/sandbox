@@ -173,30 +173,34 @@ app.get("/api/update/status", (req, res) => {
     remote_version: state.remote_version || "",
   });
 });
-
-// Hardened Auto-Update Route
+// Bulletproof In-App Update Engine
 app.post('/api/update/apply', (req, res) => {
-  // Discard runtime modifications and untracked collisions before pulling
-  const preCleanCmd = process.platform === 'win32'
-    ? 'git checkout -- src/runtime/ 2>nul & git checkout -- . 2>nul'
-    : 'git checkout -- src/runtime/ 2>/dev/null || true; git checkout -- . 2>/dev/null || true';
+  // 1. Clear any index locks and local collisions
+  const lockPath = path.join(ROOT_DIR, '.git', 'index.lock');
+  if (fs.existsSync(lockPath)) {
+    try { fs.unlinkSync(lockPath); } catch (e) {}
+  }
 
-  exec(preCleanCmd, { cwd: ROOT_DIR }, () => {
-    exec('git pull --ff-only origin master', { cwd: ROOT_DIR, timeout: 12000 }, (err, stdout, stderr) => {
-      if (err) {
-        return res.status(500).json({ success: false, error: stderr || err.message });
-      }
+  // 2. Fetch specific branch and hard-reset to avoid multi-branch / non-ff collision
+  const updateScript = 'git fetch origin master && git reset --hard origin/master';
 
-      const statePath = path.join(RUNTIME_DIR, 'update_state.json');
-      if (fs.existsSync(statePath)) {
-        try { fs.writeFileSync(statePath, JSON.stringify({ update_available: false }), 'utf8'); } catch (e) {}
-      }
+  exec(updateScript, { cwd: ROOT_DIR, timeout: 15000 }, (err, stdout, stderr) => {
+    if (err) {
+      console.error('[UPDATE ENGINE ERROR]:', stderr || err.message);
+      return res.status(500).json({ success: false, error: stderr || err.message });
+    }
 
-      res.json({ success: true, new_version: parseVersionManifest().version });
-    });
+    // Clear update state
+    const statePath = path.join(RUNTIME_DIR, 'update_state.json');
+    if (fs.existsSync(statePath)) {
+      try { fs.writeFileSync(statePath, JSON.stringify({ update_available: false }), 'utf8'); } catch (e) {}
+    }
+
+    const newVersion = parseVersionManifest().version;
+    console.log(`[UPDATE SUCCESS] Sandbox updated to v${newVersion}`);
+    res.json({ success: true, new_version: newVersion });
   });
 });
-
 app.get("/api/services/status", (req, res) => {
   const readPid = (fname) => {
     const p = path.join(RUNTIME_DIR, fname);

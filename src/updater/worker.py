@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-15-Second Silent Precision Updater Worker (Encapsulated Architecture)
+Precision Updater Worker (v2.4.0)
+Self-heals Git repository states, cleans locks/debris, and resolves multi-branch ambiguities.
+Runs as an independent persistent service.
 """
 
 import datetime
@@ -36,25 +38,7 @@ class PrecisionUpdateWorker:
 
     def log(self, message: str):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"[{timestamp}] {message}", flush=True)
-
-    def parse_manifest(self, text: str) -> dict:
-        data = {"version": "Unknown", "channel": "development", "codename": "Titanium"}
-        for line in text.splitlines():
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                data[k.strip().lower()] = v.strip()
-        return data
-
-    def read_local_manifest(self) -> dict:
-        v_path = self.root_dir / "VERSION"
-        if v_path.is_file():
-            try:
-                return self.parse_manifest(v_path.read_text(encoding="utf-8"))
-            except OSError:
-                pass
-        return {"version": "0.0.0", "channel": "development", "codename": "Titanium"}
+        print(f"[{timestamp}] [UPDATER] {message}", flush=True)
 
     def run_cmd(self, cmd: list) -> tuple:
         try:
@@ -70,6 +54,48 @@ class PrecisionUpdateWorker:
             return res.returncode, res.stdout.strip(), res.stderr.strip()
         except Exception as err:
             return 1, "", str(err)
+
+    def self_heal_git_environment(self):
+        """Cleans locks, removes untracked junk, and resolves ref ambiguities."""
+        # 1. Clean index and ref locks
+        for lock in [self.root_dir / ".git" / "index.lock", self.root_dir / ".git" / "refs" / "heads" / "master.lock"]:
+            if lock.is_file():
+                try:
+                    lock.unlink()
+                    self.log(f"Auto-healed stale lock: {lock.name}")
+                except OSError:
+                    pass
+
+        # 2. Revert runtime files if modified
+        self.run_cmd(["git", "checkout", "--", "src/runtime/"])
+
+        # 3. Clean untracked root collisions if any
+        for junk in ["package.json", "package-lock.json", "server.log", "nul"]:
+            target = self.root_dir / junk
+            if target.is_file():
+                try:
+                    target.unlink()
+                    self.log(f"Auto-healed collision: {junk}")
+                except OSError:
+                    pass
+
+    def parse_manifest(self, text: str) -> dict:
+        data = {"version": "0.0.0", "channel": "development", "codename": "Titanium"}
+        for line in text.splitlines():
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                data[k.strip().lower()] = v.strip()
+        return data
+
+    def read_local_manifest(self) -> dict:
+        v_path = self.root_dir / "VERSION"
+        if v_path.is_file():
+            try:
+                return self.parse_manifest(v_path.read_text(encoding="utf-8"))
+            except OSError:
+                pass
+        return {"version": "0.0.0", "channel": "development", "codename": "Titanium"}
 
     def write_state(self, is_available: bool, remote_ver: str, available_since: float = None):
         state = {
@@ -92,30 +118,32 @@ class PrecisionUpdateWorker:
         return {"update_available": False, "remote_version": "", "available_since": None}
 
     def execute_git_pull(self) -> bool:
-        code, branch, _ = self.run_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-        if code != 0 or not branch:
-            branch = "master"
+        self.self_heal_git_environment()
 
-        self.log(f"[PULL] Applying fast-forward pull on branch '{branch}'...")
-        code, _, err = self.run_cmd(["git", "pull", "--ff-only", "origin", branch])
+        # Fetch explicitly to avoid FETCH_HEAD multi-branch fast-forward collisions
+        code, _, err = self.run_cmd(["git", "fetch", "origin", "master"])
+        if code != 0:
+            self.log(f"Fetch failed: {err}")
+            return False
+
+        # Reset HEAD directly to remote master to guarantee cleanly applied updates
+        code, out, err = self.run_cmd(["git", "reset", "--hard", "origin/master"])
         if code == 0:
-            self.log("[SUCCESS] Git pull complete.")
+            self.log(f"Successfully updated repository: {out}")
             self.write_state(False, "", None)
             return True
         else:
-            self.log(f"[ERROR] Git pull failed: {err}")
+            self.log(f"Hard reset failed: {err}")
             return False
 
     def probe_remote(self):
-        code, branch, _ = self.run_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-        if code != 0 or not branch or branch == "HEAD":
-            return
+        self.self_heal_git_environment()
 
-        code, _, _ = self.run_cmd(["git", "fetch", "origin", branch, "--quiet"])
+        code, _, _ = self.run_cmd(["git", "fetch", "origin", "master", "--quiet"])
         if code != 0:
             return
 
-        code, remote_text, _ = self.run_cmd(["git", "show", f"origin/{branch}:VERSION"])
+        code, remote_text, _ = self.run_cmd(["git", "show", "origin/master:VERSION"])
         if code != 0:
             return
 
@@ -126,22 +154,22 @@ class PrecisionUpdateWorker:
         if local["version"] != remote["version"]:
             available_since = state.get("available_since") or time.time()
             self.write_state(True, remote["version"], available_since)
-            self.log(f"[NOTIFY] Update available: v{local['version']} -> v{remote['version']}")
+            self.log(f"Update available: v{local['version']} -> v{remote['version']}")
 
             if (time.time() - available_since) >= self.auto_apply_seconds:
-                self.log("[SCHEDULE] 6-hour window elapsed. Applying update automatically.")
+                self.log("6-hour window elapsed. Applying update automatically.")
                 self.execute_git_pull()
         else:
             if state.get("update_available"):
                 self.write_state(False, "", None)
 
     def run_loop(self):
-        self.log(f"Updater worker active. Polling every {self.poll_interval}s.")
+        self.log("Independent Updater Daemon initialized and running.")
         while self.running:
             try:
                 self.probe_remote()
             except Exception as e:
-                self.log(f"[EXCEPTION] {e}")
+                self.log(f"Exception during poll: {e}")
 
             for _ in range(self.poll_interval):
                 if not self.running:
